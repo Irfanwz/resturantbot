@@ -3,6 +3,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from decimal import Decimal
 
+import httpx
 from restaurant_bot.schemas.config import RestaurantConfig
 
 
@@ -85,3 +86,39 @@ def build_wa_notification_link(
     )
 
     return f"https://wa.me/{phone}?text={__import__('urllib.parse', fromlist=['quote']).quote(message)}"
+
+
+async def send_telegram_order_notification(
+    bot_token: str,
+    chat_id: str,
+    restaurant_name: str,
+    order_number: str,
+    order_total: str,
+    order_type: str,
+    items_summary: str,
+) -> bool:
+    """Send new order notification to restaurant owner's Telegram."""
+    if not bot_token or not chat_id:
+        return False
+
+    text = (
+        f"🔔 <b>New Order — {restaurant_name}</b>\n\n"
+        f"📋 Order #: <b>{order_number}</b>\n"
+        f"🍽️ Type: {order_type}\n"
+        f"💰 Total: <b>{order_total}</b>\n\n"
+        f"📦 Items:\n{items_summary}\n\n"
+        f"<i>Open admin panel to manage this order.</i>"
+    )
+
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(url, json={
+                "chat_id": chat_id,
+                "text": text,
+                "parse_mode": "HTML",
+            })
+            return resp.status_code == 200
+    except Exception as e:
+        print(f"Telegram notification failed: {e}")
+        return False

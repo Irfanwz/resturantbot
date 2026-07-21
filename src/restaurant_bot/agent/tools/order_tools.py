@@ -12,6 +12,7 @@ from restaurant_bot.services.order_service import (
     get_order_by_number,
     get_customer_orders,
 )
+from restaurant_bot.services.notification_service import send_telegram_order_notification
 
 
 async def add_to_cart(ctx: RunContext[RestaurantBotDeps], item_name: str, quantity: int = 1, modifiers: list[dict] | None = None, special_instructions: str | None = None) -> str:
@@ -133,9 +134,22 @@ async def place_order(ctx: RunContext[RestaurantBotDeps], order_type: str = "din
 
     # Trigger notifications (non-blocking)
     try:
-        items_text = ", ".join(f"{ci.quantity}x {ci.name}" for ci in cart_items_snapshot)
-        # Store notification data in session for the chat endpoint to pick up
+        items_text = "\n".join(f"  • {ci.quantity}x {ci.name}" for ci in cart_items_snapshot)
         session.add_message("system", f"__ORDER_PLACED__|{order.order_number}|{order.total}|{order_type}|{items_text}")
+
+        # Send Telegram notification to restaurant owner
+        tg_token = config.channels.telegram_bot_token
+        tg_chat_id = config.notifications.telegram_admin_chat_id
+        if tg_token and tg_chat_id:
+            await send_telegram_order_notification(
+                bot_token=tg_token,
+                chat_id=tg_chat_id,
+                restaurant_name=ctx.deps.restaurant_name,
+                order_number=order.order_number,
+                order_total=str(order.total),
+                order_type=order_type,
+                items_summary=items_text,
+            )
     except Exception:
         pass
 

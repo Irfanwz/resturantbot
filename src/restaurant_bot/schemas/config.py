@@ -61,6 +61,7 @@ class NotificationConfig(BaseModel):
     notification_webhook_url: str | None = None
     daily_summary_enabled: bool = False
     daily_summary_time: str = "22:00"
+    telegram_admin_chat_id: str | None = None  # Owner's personal Telegram Chat ID
     # Email SMTP settings
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 587
