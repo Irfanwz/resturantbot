@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Golden Fork - Restaurant Website (Demo)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #333; }
+
+        /* Hero */
+        .hero {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white; text-align: center; padding: 80px 20px;
+        }
+        .hero h1 { font-size: 48px; margin-bottom: 16px; }
+        .hero p { font-size: 20px; opacity: 0.8; margin-bottom: 32px; }
+        .hero .badge {
+            display: inline-block; padding: 8px 20px;
+            background: #FF6B35; border-radius: 24px;
+            font-size: 14px; font-weight: 600;
+        }
+
+        /* Section */
+        .section { padding: 60px 20px; max-width: 900px; margin: 0 auto; }
+        .section h2 { font-size: 32px; margin-bottom: 24px; text-align: center; }
+
+        /* Menu grid */
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .menu-card {
+            background: white; border-radius: 12px; padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #f0f0f0;
+        }
+        .menu-card h3 { color: #FF6B35; margin-bottom: 8px; }
+        .menu-card .price { font-size: 20px; font-weight: 700; color: #1a1a2e; }
+        .menu-card p { font-size: 14px; color: #666; margin: 8px 0; }
+
+        /* Info bar */
+        .info-bar {
+            background: #FFF7ED; padding: 40px 20px; text-align: center;
+            border-top: 3px solid #FF6B35;
+        }
+        .info-bar p { font-size: 16px; color: #9a3412; margin: 8px 0; }
+
+        /* Footer */
+        footer {
+            background: #1a1a2e; color: white; text-align: center;
+            padding: 30px 20px; font-size: 14px; opacity: 0.7;
+        }
+
+        /* Notice banner */
+        .widget-notice {
+            position: fixed; bottom: 96px; right: 96px; z-index: 99997;
+            background: #1a1a2e; color: white; padding: 12px 20px;
+            border-radius: 12px; font-size: 14px;
+            animation: fadeInBounce 0.5s ease 2s both;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        }
+        .widget-notice::after {
+            content: ''; position: absolute; bottom: -8px; right: 20px;
+            width: 0; height: 0; border-left: 8px solid transparent;
+            border-right: 8px solid transparent; border-top: 8px solid #1a1a2e;
+        }
+        @keyframes fadeInBounce {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="hero">
+        <h1>The Golden Fork</h1>
+        <p>Where every bite is an adventure!</p>
+        <span class="badge">Order Online via Chat Bot</span>
+    </div>
+
+    <div class="section">
+        <h2>Our Menu Highlights</h2>
+        <div class="menu-grid">
+            <div class="menu-card">
+                <h3>Truffle Burger</h3>
+                <span class="price">$16.99</span>
+                <p>Angus beef, truffle aioli, caramelized onions, gruyere</p>
+            </div>
+            <div class="menu-card">
+                <h3>Fettuccine Alfredo</h3>
+                <span class="price">$13.99</span>
+                <p>Creamy parmesan sauce with fresh fettuccine</p>
+            </div>
+            <div class="menu-card">
+                <h3>Chocolate Lava Cake</h3>
+                <span class="price">$8.99</span>
+                <p>Warm chocolate cake with molten center</p>
+            </div>
+            <div class="menu-card">
+                <h3>Caesar Salad</h3>
+                <span class="price">$9.99</span>
+                <p>Romaine, croutons, parmesan, caesar dressing</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-bar">
+        <p><strong>Visit Us:</strong> 123 Food Street, Flavor Town, FT 12345</p>
+        <p><strong>Hours:</strong> Tue-Sun, 11:00 AM - 10:00 PM (Closed Monday)</p>
+        <p><strong>Phone:</strong> +1-555-FOOD-123</p>
+    </div>
+
+    <div class="section" style="text-align:center">
+        <h2>Chat With Us!</h2>
+        <p style="font-size:18px; color:#666; margin-bottom:16px;">
+            Click the chat button in the bottom-right corner to order food,
+            book a table, or ask any questions. Our AI assistant is available 24/7!
+        </p>
+    </div>
+
+    <footer>
+        <p>The Golden Fork &copy; 2025 — Powered by Restaurant Bot AI</p>
+    </footer>
+
+    <!-- Widget notice -->
+    <div class="widget-notice" id="widgetNotice">
+        Chat with us! Order food & book tables here
+    </div>
+
+    <!-- THE MAGIC: One line to add the chat bot to ANY website -->
+    <script>
+        // Auto-detect restaurant ID
+        async function getRestaurantId() {
+            try {
+                const resp = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'admin@goldenfork.com', password: 'admin123' })
+                });
+                const data = await resp.json();
+                return data.restaurant_id;
+            } catch(e) { return ''; }
+        }
+
+        getRestaurantId().then(id => {
+            if (!id) return;
+            const s = document.createElement('script');
+            s.src = '/static/widget.js';
+            s.setAttribute('data-restaurant', id);
+            document.body.appendChild(s);
+
+            // Hide notice when widget opens
+            setTimeout(() => {
+                document.getElementById('widgetNotice')?.remove();
+            }, 8000);
+        });
+    </script>
+</body>
+</html>

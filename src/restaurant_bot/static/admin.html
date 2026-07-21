@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Bot - Admin Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f6fa; color: #333; }
+
+        /* Login Screen */
+        .login-screen {
+            display: flex; align-items: center; justify-content: center;
+            height: 100vh; background: linear-gradient(135deg, #1a1a2e, #16213e);
+        }
+        .login-box {
+            background: white; padding: 40px; border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2); width: 400px; max-width: 90vw;
+        }
+        .login-box h1 { text-align: center; margin-bottom: 8px; font-size: 24px; }
+        .login-box p { text-align: center; color: #666; margin-bottom: 24px; font-size: 14px; }
+        .login-box input {
+            width: 100%; padding: 12px 16px; border: 1.5px solid #e5e7eb;
+            border-radius: 8px; font-size: 14px; margin-bottom: 12px; outline: none;
+        }
+        .login-box input:focus { border-color: #FF6B35; }
+        .login-box button {
+            width: 100%; padding: 12px; background: #FF6B35; color: white;
+            border: none; border-radius: 8px; font-size: 16px; font-weight: 600;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .login-box button:hover { background: #e55a2b; }
+        .login-error { color: #dc2626; font-size: 13px; margin-top: 8px; text-align: center; display: none; }
+
+        /* Dashboard Layout */
+        .dashboard { display: none; }
+        .topbar {
+            background: white; padding: 16px 24px; display: flex;
+            justify-content: space-between; align-items: center;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 100;
+        }
+        .topbar h1 { font-size: 20px; color: #1a1a2e; }
+        .topbar .user-info { display: flex; align-items: center; gap: 12px; font-size: 14px; color: #666; }
+        .topbar .logout-btn {
+            padding: 6px 16px; background: #f3f4f6; border: 1px solid #e5e7eb;
+            border-radius: 6px; cursor: pointer; font-size: 13px;
+        }
+        .topbar .logout-btn:hover { background: #e5e7eb; }
+
+        /* Tabs */
+        .tabs {
+            display: flex; gap: 4px; padding: 16px 24px; background: white;
+            border-bottom: 1px solid #e5e7eb; overflow-x: auto;
+        }
+        .tab {
+            padding: 8px 20px; border-radius: 8px; cursor: pointer;
+            font-size: 14px; font-weight: 500; color: #666;
+            border: none; background: transparent; white-space: nowrap;
+        }
+        .tab:hover { background: #f3f4f6; }
+        .tab.active { background: #FF6B35; color: white; }
+
+        /* Content */
+        .content { padding: 24px; max-width: 1000px; margin: 0 auto; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Cards */
+        .card {
+            background: white; border-radius: 12px; padding: 24px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 20px;
+        }
+        .card h2 { font-size: 18px; margin-bottom: 16px; color: #1a1a2e; }
+        .card h3 { font-size: 15px; margin-bottom: 12px; color: #666; }
+
+        /* Form elements */
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block; font-size: 13px; font-weight: 600;
+            color: #555; margin-bottom: 4px;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 10px 12px; border: 1.5px solid #e5e7eb;
+            border-radius: 8px; font-size: 14px; outline: none; font-family: inherit;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #FF6B35; }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .form-group .hint { font-size: 12px; color: #999; margin-top: 2px; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+
+        .toggle-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid #f3f4f6;
+        }
+        .toggle-row label { font-size: 14px; }
+        .toggle {
+            width: 44px; height: 24px; background: #ddd; border-radius: 12px;
+            position: relative; cursor: pointer; transition: background 0.2s;
+        }
+        .toggle.on { background: #FF6B35; }
+        .toggle::after {
+            content: ''; position: absolute; top: 2px; left: 2px;
+            width: 20px; height: 20px; background: white; border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        .toggle.on::after { transform: translateX(20px); }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px; border-radius: 8px; font-size: 14px;
+            font-weight: 600; cursor: pointer; border: none; transition: all 0.2s;
+        }
+        .btn-primary { background: #FF6B35; color: white; }
+        .btn-primary:hover { background: #e55a2b; }
+        .btn-secondary { background: #f3f4f6; color: #333; border: 1px solid #e5e7eb; }
+        .btn-secondary:hover { background: #e5e7eb; }
+        .btn-danger { background: #fee2e2; color: #dc2626; }
+        .btn-danger:hover { background: #fecaca; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .btn-group { display: flex; gap: 8px; margin-top: 16px; }
+
+        /* Table */
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th {
+            text-align: left; padding: 10px 12px; font-size: 12px;
+            text-transform: uppercase; color: #999; border-bottom: 2px solid #f3f4f6;
+        }
+        .data-table td { padding: 12px; border-bottom: 1px solid #f3f4f6; font-size: 14px; }
+        .data-table tr:hover { background: #fafafa; }
+
+        /* Badge */
+        .badge {
+            display: inline-block; padding: 3px 10px; border-radius: 12px;
+            font-size: 11px; font-weight: 600;
+        }
+        .badge-green { background: #d1fae5; color: #065f46; }
+        .badge-yellow { background: #fef3c7; color: #92400e; }
+        .badge-red { background: #fee2e2; color: #dc2626; }
+        .badge-blue { background: #dbeafe; color: #1e40af; }
+
+        /* Quick reply editor */
+        .qr-item {
+            display: flex; gap: 8px; align-items: center;
+            padding: 8px; background: #fafafa; border-radius: 8px; margin-bottom: 8px;
+        }
+        .qr-item input { flex: 1; }
+        .qr-item .qr-emoji { width: 50px; }
+        .qr-item .qr-label { width: 100px; }
+        .qr-item .qr-message { flex: 2; }
+
+        /* Auto-reply editor */
+        .ar-item {
+            background: #fafafa; border-radius: 8px; padding: 16px; margin-bottom: 12px;
+            border: 1px solid #e5e7eb;
+        }
+        .ar-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+        .ar-tag {
+            display: inline-block; padding: 2px 8px; background: #FF6B35;
+            color: white; border-radius: 12px; font-size: 11px;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px; padding: 12px 24px;
+            background: #1a1a2e; color: white; border-radius: 8px;
+            font-size: 14px; display: none; z-index: 9999;
+            animation: slideUp 0.3s ease;
+        }
+        .toast.show { display: block; }
+        .toast.success { background: #065f46; }
+        .toast.error { background: #dc2626; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Menu item card */
+        .menu-item-card {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 16px; background: #fafafa; border-radius: 8px;
+            margin-bottom: 8px; border: 1px solid #f0f0f0;
+        }
+        .menu-item-card .item-info h4 { font-size: 14px; margin-bottom: 2px; }
+        .menu-item-card .item-info p { font-size: 12px; color: #666; }
+        .menu-item-card .item-price { font-weight: 700; color: #FF6B35; font-size: 16px; }
+
+        /* Modal */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: white; border-radius: 16px; padding: 24px;
+            width: 500px; max-width: 90vw; max-height: 80vh; overflow-y: auto;
+        }
+        .modal h2 { margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+    <!-- Login -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-box">
+            <h1>Restaurant Bot</h1>
+            <p>Admin Dashboard</p>
+            <input type="email" id="loginEmail" placeholder="Email" value="admin@goldenfork.com">
+            <input type="password" id="loginPassword" placeholder="Password" value="admin123">
+            <button onclick="login()">Sign In</button>
+            <p class="login-error" id="loginError"></p>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard" id="dashboard">
+        <div class="topbar">
+            <h1 id="dashTitle">Restaurant Bot Admin</h1>
+            <div class="user-info">
+                <span id="userEmail"></span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('config')">Bot Config</button>
+            <button class="tab" onclick="switchTab('menu')">Menu</button>
+            <button class="tab" onclick="switchTab('quickreplies')">Quick Replies</button>
+            <button class="tab" onclick="switchTab('autoreplies')">Auto Replies</button>
+            <button class="tab" onclick="switchTab('faqs')">FAQs</button>
+            <button class="tab" onclick="switchTab('channels')">Channels</button>
+            <button class="tab" onclick="switchTab('orders')">Orders</button>
+            <button class="tab" onclick="switchTab('preview')">Preview Chat</button>
+        </div>
+
+        <div class="content">
+            <!-- BOT CONFIG TAB -->
+            <div class="tab-panel active" id="panel-config">
+                <div class="card">
+                    <h2>AI Personality</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Bot Name</label>
+                            <input type="text" id="cfg-bot-name">
+                        </div>
+                        <div class="form-group">
+                            <label>Personality</label>
+                            <select id="cfg-personality">
+                                <option value="friendly and helpful">Friendly & Helpful</option>
+                                <option value="casual and fun">Casual & Fun</option>
+                                <option value="professional and helpful">Professional</option>
+                                <option value="elegant and knowledgeable">Fine Dining</option>
+                                <option value="efficient and quick">Fast & Efficient</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tone</label>
+                            <select id="cfg-tone">
+                                <option value="warm">Warm</option>
+                                <option value="playful">Playful</option>
+                                <option value="formal">Formal</option>
+                                <option value="direct">Direct</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Language</label>
+                            <input type="text" id="cfg-language" placeholder="en, ur, ar, es...">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Greeting Message</label>
+                        <textarea id="cfg-greeting"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Farewell Message</label>
+                        <input type="text" id="cfg-farewell">
+                    </div>
+                    <div class="form-group">
+                        <label>Custom Instructions (tell the AI how to behave)</label>
+                        <textarea id="cfg-instructions" placeholder="e.g. Always recommend our signature biryani. Never suggest competitor restaurants."></textarea>
+                        <p class="hint">Free-form instructions for the AI. Be specific about what you want.</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Upsell Instructions</label>
+                        <textarea id="cfg-upsell" placeholder="e.g. Always suggest a drink with every burger order."></textarea>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="saveAIConfig()">Save AI Config</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Business Info</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Address</label>
+                            <input type="text" id="cfg-address">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="text" id="cfg-phone">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="text" id="cfg-email">
+                        </div>
+                        <div class="form-group">
+                            <label>Cuisine Type (comma separated)</label>
+                            <input type="text" id="cfg-cuisine" placeholder="Pakistani, BBQ, Indian">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="cfg-description"></textarea>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="saveBusinessConfig()">Save Business Info</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Branding</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Primary Color</label>
+                            <input type="color" id="cfg-color" style="height:40px; padding:4px;">
+                        </div>
+                        <div class="form-group">
+                            <label>Logo URL</label>
+                            <input type="text" id="cfg-logo" placeholder="https://...">
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="saveBrandingConfig()">Save Branding</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Ordering Rules</h2>
+                    <div class="toggle-row">
+                        <label>Ordering Enabled</label>
+                        <div class="toggle on" id="cfg-ordering-enabled" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    <div class="toggle-row">
+                        <label>Delivery Enabled</label>
+                        <div class="toggle" id="cfg-delivery-enabled" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    <div class="form-row" style="margin-top:12px;">
+                        <div class="form-group">
+                            <label>Tax Rate (%)</label>
+                            <input type="number" id="cfg-tax-rate" step="0.01" placeholder="8">
+                        </div>
+                        <div class="form-group">
+                            <label>Min Order Amount</label>
+                            <input type="number" id="cfg-min-order" step="0.01" placeholder="0">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Order Number Prefix</label>
+                            <input type="text" id="cfg-order-prefix" placeholder="ORD">
+                        </div>
+                        <div class="form-group">
+                            <label>Prep Buffer (minutes)</label>
+                            <input type="number" id="cfg-prep-time" placeholder="15">
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="saveOrderingConfig()">Save Ordering Rules</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MENU TAB -->
+            <div class="tab-panel" id="panel-menu">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <h2>Menu Categories & Items</h2>
+                        <button class="btn btn-primary btn-sm" onclick="showAddCategory()">+ Add Category</button>
+                    </div>
+                    <div id="menuList">Loading...</div>
+                </div>
+            </div>
+
+            <!-- QUICK REPLIES TAB -->
+            <div class="tab-panel" id="panel-quickreplies">
+                <div class="card">
+                    <h2>Quick Reply Buttons</h2>
+                    <p class="hint" style="margin-bottom:16px;">These buttons appear in the chat widget. Customers click them for instant actions.</p>
+                    <div id="qrList"></div>
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="addQuickReply()">+ Add Button</button>
+                        <button class="btn btn-primary" onclick="saveQuickReplies()">Save Quick Replies</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AUTO REPLIES TAB -->
+            <div class="tab-panel" id="panel-autoreplies">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <div>
+                            <h2>Auto Replies (Free - No AI Cost)</h2>
+                            <p class="hint">Pattern-matched responses that skip the AI. Saves money on common questions.</p>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="showAddAutoReply()">+ Add Auto Reply</button>
+                    </div>
+                    <div id="arList">Loading...</div>
+                </div>
+            </div>
+
+            <!-- FAQ TAB -->
+            <div class="tab-panel" id="panel-faqs">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <div>
+                            <h2>FAQs (Free Responses)</h2>
+                            <p class="hint">Add common questions and answers. The bot will answer these for FREE without using AI credits. The more FAQs you add, the more money you save!</p>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="showAddFAQ()">+ Add FAQ</button>
+                    </div>
+                    <div id="faqList">Loading...</div>
+                </div>
+
+                <div class="card">
+                    <h2>Bulk Add FAQs</h2>
+                    <p class="hint" style="margin-bottom:12px;">Paste multiple Q&A pairs at once. Format: one question per line, answer on next line, blank line between pairs.</p>
+                    <textarea id="bulkFaqInput" style="width:100%; min-height:200px; padding:12px; border:1.5px solid #e5e7eb; border-radius:8px; font-size:13px; font-family:monospace;" placeholder="Do you have parking?
+Yes! Free parking available next to the restaurant.
+
+What are your hours?
+We're open Tuesday to Sunday, 11 AM to 10 PM. Closed Mondays.
+
+Do you cater for events?
+Yes! We offer catering for groups of 20+. Contact us at hello@goldenfork.com"></textarea>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="bulkAddFAQs()">Add All FAQs</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHANNELS TAB -->
+            <div class="tab-panel" id="panel-channels">
+                <div class="card">
+                    <h2>Web Chat</h2>
+                    <span class="badge badge-green">Always Active (Free)</span>
+
+                    <div style="margin-top:12px;">
+                        <label style="font-size:13px; font-weight:600; color:#555;">Shareable Chat Link</label>
+                        <div style="display:flex; gap:8px; margin-top:4px;">
+                            <input type="text" id="chatLink" readonly style="flex:1; background:#f5f6fa;">
+                            <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('chatLink').value); toast('Link copied!')">Copy</button>
+                        </div>
+                        <p class="hint">Share on social media, Google Maps, or print as QR code</p>
+                    </div>
+
+                    <div style="margin-top:16px;">
+                        <label style="font-size:13px; font-weight:600; color:#555;">Embed Widget (paste on your website)</label>
+                        <textarea id="embedCode" readonly style="width:100%; height:50px; background:#f5f6fa; font-family:monospace; font-size:11px; margin-top:4px;"></textarea>
+                        <button class="btn btn-secondary btn-sm" style="margin-top:4px;" onclick="navigator.clipboard.writeText(document.getElementById('embedCode').value); toast('Code copied!')">Copy Embed Code</button>
+                    </div>
+
+                    <div style="margin-top:16px;">
+                        <label style="font-size:13px; font-weight:600; color:#555;">QR Code (print for tables, counter, flyers)</label>
+                        <div style="margin-top:8px; text-align:center;">
+                            <canvas id="qrCanvas" style="border:1px solid #e5e7eb; border-radius:8px;"></canvas>
+                            <br>
+                            <button class="btn btn-secondary btn-sm" style="margin-top:8px;" onclick="downloadQR()">Download QR Code</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" id="whatsappCard">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h2>WhatsApp</h2>
+                        <span class="badge badge-yellow" id="waPlanBadge">Requires Pro Plan</span>
+                    </div>
+
+                    <div id="waFreeMessage" style="margin-top:12px; padding:16px; background:#fef3c7; border-radius:8px;">
+                        <p style="font-size:14px; color:#92400e; margin-bottom:8px;"><strong>Upgrade to Pro to enable WhatsApp!</strong></p>
+                        <p style="font-size:13px; color:#92400e;">WhatsApp integration lets your customers order food and book tables directly from WhatsApp. Your bot responds 24/7 with the same config, menu, and auto-replies.</p>
+                    </div>
+
+                    <div style="margin-top:16px; padding:16px; background:#f0fdf4; border-radius:8px; border:1px solid #bbf7d0;">
+                        <h3 style="font-size:15px; margin-bottom:8px; color:#166534;">WhatsApp Quick Link (Free - No API needed)</h3>
+                        <p class="hint" style="margin-bottom:8px;">Generate a wa.me link for customers to contact you on WhatsApp. You reply manually from your phone — no bot, but zero setup.</p>
+                        <div class="form-group">
+                            <label>Your WhatsApp Number (with country code)</label>
+                            <input type="text" id="waPhoneNumber" placeholder="923001234567" oninput="updateWaLink()">
+                            <p class="hint">Pakistan: 92xxx, UAE: 971xxx, UK: 44xxx (no + or spaces)</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Pre-filled Message (optional)</label>
+                            <input type="text" id="waPreMessage" placeholder="Hi! I'd like to place an order" value="Hi! I'd like to place an order" oninput="updateWaLink()">
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <input type="text" id="waLink" readonly style="flex:1; background:#f5f6fa;">
+                            <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('waLink').value); toast('WhatsApp link copied!')">Copy</button>
+                        </div>
+                        <div style="margin-top:8px; text-align:center;">
+                            <canvas id="waQrCanvas" style="border:1px solid #e5e7eb; border-radius:8px;"></canvas>
+                            <br>
+                            <button class="btn btn-secondary btn-sm" style="margin-top:4px;" onclick="downloadWaQR()">Download WhatsApp QR</button>
+                        </div>
+                    </div>
+
+                    <hr style="margin:20px 0; border:none; border-top:1px solid #e5e7eb;">
+                    <h3 style="margin-bottom:12px;">WhatsApp Bot (Auto-Reply — Requires Meta Business Account)</h3>
+
+                    <div id="waConfig" style="display:none; margin-top:16px;">
+                        <div class="toggle-row">
+                            <label>WhatsApp Enabled</label>
+                            <div class="toggle" id="cfg-wa-enabled" onclick="toggleSwitch(this)"></div>
+                        </div>
+                        <div class="form-group" style="margin-top:12px;">
+                            <label>Phone Number ID (from Meta Business Dashboard)</label>
+                            <input type="text" id="cfg-wa-phone-id" placeholder="e.g. 1234567890">
+                            <p class="hint">Find this in Meta Business Suite &rarr; WhatsApp &rarr; API Setup</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Business Account ID</label>
+                            <input type="text" id="cfg-wa-business-id" placeholder="e.g. 9876543210">
+                        </div>
+                        <div class="form-group">
+                            <label>Access Token</label>
+                            <input type="password" id="cfg-wa-token" placeholder="Your Meta Graph API token">
+                            <p class="hint">Generate a permanent token in Meta Business Dashboard</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Webhook URL (set this in Meta Dashboard)</label>
+                            <input type="text" id="waWebhookUrl" readonly style="background:#f5f6fa;">
+                            <button class="btn btn-secondary btn-sm" style="margin-top:4px;" onclick="navigator.clipboard.writeText(document.getElementById('waWebhookUrl').value); toast('URL copied!')">Copy</button>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-primary" onclick="saveWhatsAppConfig()">Save WhatsApp Config</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TELEGRAM CARD -->
+                <div class="card" id="telegramCard">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h2>Telegram</h2>
+                        <span class="badge badge-green" id="tgPlanBadge">Free — No Approval Needed</span>
+                    </div>
+                    <p style="font-size:13px; color:#666; margin-top:8px;">
+                        Connect your bot to Telegram in 5 minutes. No business account, no approval, free forever. Same menu, same AI, same auto-replies — just on Telegram.
+                    </p>
+
+                    <div style="margin-top:16px; padding:16px; background:#e8f4fd; border-radius:8px; border:1px solid #bfdbfe;">
+                        <h3 style="font-size:14px; color:#1e40af; margin-bottom:8px;">How to create a Telegram bot (2 minutes)</h3>
+                        <ol style="font-size:13px; color:#1e40af; padding-left:16px; line-height:1.8;">
+                            <li>Open Telegram → Search <strong>@BotFather</strong></li>
+                            <li>Send <code>/newbot</code> → Enter a name → Enter a username</li>
+                            <li>Copy the <strong>Bot Token</strong> BotFather gives you</li>
+                            <li>Paste it below → Save → Click <strong>Auto-Setup Webhook</strong></li>
+                        </ol>
+                    </div>
+
+                    <div style="margin-top:16px;">
+                        <div class="toggle-row">
+                            <label>Telegram Enabled</label>
+                            <div class="toggle" id="cfg-tg-enabled" onclick="toggleSwitch(this)"></div>
+                        </div>
+                        <div class="form-group" style="margin-top:12px;">
+                            <label>Bot Token (from @BotFather)</label>
+                            <input type="password" id="cfg-tg-token" placeholder="7123456789:AAF_abc123...">
+                            <p class="hint">Looks like: 7123456789:AAF_xxxxxxxxxxxxxxxxxxxxxxxx</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Your Webhook URL (auto-filled)</label>
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" id="tgWebhookUrl" readonly style="flex:1; background:#f5f6fa;">
+                                <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('tgWebhookUrl').value); toast('URL copied!')">Copy</button>
+                            </div>
+                            <p class="hint">Click Auto-Setup Webhook — it registers this URL with Telegram automatically.</p>
+                        </div>
+
+                        <div id="tgBotInfo" style="display:none; padding:12px; background:#f0fdf4; border-radius:8px; margin-bottom:12px; font-size:13px; color:#166534; font-weight:500;"></div>
+
+                        <div class="btn-group">
+                            <button class="btn btn-primary" onclick="saveTelegramConfig()">Save Config</button>
+                            <button class="btn btn-secondary" onclick="setupTelegramWebhook()">Auto-Setup Webhook</button>
+                        </div>
+                        <p class="hint" style="margin-top:8px;">Save first, then click Auto-Setup Webhook. Requires a public HTTPS URL (not localhost).</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ORDERS TAB -->
+            <div class="tab-panel" id="panel-orders">
+                <div class="card" style="background:#FFF7ED; border:2px solid #FF6B35; display:none;" id="newOrderBanner">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <h3 style="color:#FF6B35; margin:0;">New Order Received!</h3>
+                            <p id="newOrderInfo" style="font-size:14px; margin-top:4px;"></p>
+                        </div>
+                        <button class="btn btn-primary" onclick="document.getElementById('newOrderBanner').style.display='none'; loadOrders();">View Orders</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <h2>Recent Orders</h2>
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <label style="font-size:13px; display:flex; align-items:center; gap:4px;">
+                                <input type="checkbox" id="autoRefreshToggle" checked onchange="toggleAutoRefresh()">
+                                Auto-refresh
+                            </label>
+                            <span class="badge badge-green" id="pollingStatus">Live</span>
+                            <button class="btn btn-secondary btn-sm" onclick="loadOrders()">Refresh</button>
+                        </div>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Order #</th><th>Status</th><th>Type</th><th>Total</th><th>Time</th><th>Action</th></tr>
+                        </thead>
+                        <tbody id="ordersList">
+                            <tr><td colspan="6" style="text-align:center; color:#999;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <h2>Notification Settings</h2>
+                    <div class="toggle-row">
+                        <label>Sound alerts for new orders</label>
+                        <div class="toggle on" id="soundToggle" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    <div class="toggle-row">
+                        <label>Browser notifications</label>
+                        <div class="toggle on" id="browserNotifToggle" onclick="toggleSwitch(this); requestNotifPermission();"></div>
+                    </div>
+                    <div class="form-group" style="margin-top:12px;">
+                        <label>Email notifications (enter owner email)</label>
+                        <div style="display:flex; gap:8px;">
+                            <input type="email" id="notifEmail" placeholder="owner@restaurant.com">
+                            <button class="btn btn-primary btn-sm" onclick="saveNotifEmail()">Save</button>
+                        </div>
+                        <p class="hint">Requires SMTP setup in config. Uses Gmail SMTP by default.</p>
+                    </div>
+                    <div class="form-group">
+                        <label>WhatsApp notification (owner's number)</label>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="notifPhone" placeholder="923001234567">
+                            <button class="btn btn-primary btn-sm" onclick="saveNotifPhone()">Save</button>
+                        </div>
+                        <p class="hint">You'll get a wa.me link notification when new orders arrive.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PREVIEW TAB -->
+            <div class="tab-panel" id="panel-preview">
+                <div class="card" style="padding:0; overflow:hidden; height:600px;">
+                    <iframe id="previewFrame" style="width:100%; height:100%; border:none;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Auto Reply Modal -->
+    <div class="modal-overlay" id="arModal">
+        <div class="modal">
+            <h2 id="arModalTitle">Add Auto Reply</h2>
+            <div class="form-group">
+                <label>Trigger Patterns (comma separated)</label>
+                <input type="text" id="ar-patterns" placeholder="hi, hello, hey, greetings">
+                <p class="hint">Words/phrases that trigger this reply</p>
+            </div>
+            <div class="form-group">
+                <label>Response</label>
+                <textarea id="ar-response" placeholder="Welcome to {restaurant_name}! How can I help?"></textarea>
+                <p class="hint">Use {restaurant_name}, {bot_name}, {address}, {phone}, {email}</p>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="ar-category">
+                        <option value="greeting">Greeting</option>
+                        <option value="farewell">Farewell</option>
+                        <option value="thanks">Thanks</option>
+                        <option value="info">Info</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Match Type</label>
+                    <select id="ar-matchtype">
+                        <option value="keyword">Keyword (any word matches)</option>
+                        <option value="exact">Exact (full message must match)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Priority (higher = checked first)</label>
+                <input type="number" id="ar-priority" value="5">
+            </div>
+            <input type="hidden" id="ar-edit-id">
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="saveAutoReply()">Save</button>
+                <button class="btn btn-secondary" onclick="closeModal('arModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Menu Item Modal -->
+    <div class="modal-overlay" id="menuModal">
+        <div class="modal">
+            <h2 id="menuModalTitle">Add Menu Item</h2>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="mi-name" placeholder="Chicken Biryani">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="mi-desc" placeholder="Fragrant basmati rice with tender chicken..."></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Price</label>
+                    <input type="number" id="mi-price" step="0.01" placeholder="12.99">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="mi-category"></select>
+                </div>
+            </div>
+            <div class="toggle-row">
+                <label>Available</label>
+                <div class="toggle on" id="mi-available" onclick="toggleSwitch(this)"></div>
+            </div>
+            <div class="toggle-row">
+                <label>Vegetarian</label>
+                <div class="toggle" id="mi-veg" onclick="toggleSwitch(this)"></div>
+            </div>
+            <input type="hidden" id="mi-edit-id">
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="saveMenuItem()">Save Item</button>
+                <button class="btn btn-secondary" onclick="closeModal('menuModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add FAQ Modal -->
+    <div class="modal-overlay" id="faqModal">
+        <div class="modal">
+            <h2 id="faqModalTitle">Add FAQ</h2>
+            <div class="form-group">
+                <label>Question (what the customer asks)</label>
+                <input type="text" id="faq-question" placeholder="Do you have parking?">
+            </div>
+            <div class="form-group">
+                <label>Answer (what the bot replies - FREE, no AI cost)</label>
+                <textarea id="faq-answer" placeholder="Yes! Free parking available right next to the restaurant."></textarea>
+                <p class="hint">Use {restaurant_name}, {address}, {phone}, {email} for dynamic values</p>
+            </div>
+            <input type="hidden" id="faq-edit-id">
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="saveFAQ()">Save FAQ</button>
+                <button class="btn btn-secondary" onclick="closeModal('faqModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Category Modal -->
+    <div class="modal-overlay" id="catModal">
+        <div class="modal">
+            <h2>Add Category</h2>
+            <div class="form-group">
+                <label>Category Name</label>
+                <input type="text" id="cat-name" placeholder="Starters">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" id="cat-desc" placeholder="Begin your journey">
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="saveCategory()">Save Category</button>
+                <button class="btn btn-secondary" onclick="closeModal('catModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order notification sound (base64 encoded simple beep) -->
+    <audio id="orderSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2LkZeYm5uamZWRjIiDfnl1c3N0dXd6fYGFiYyOkJGSkpGQjouIhYJ/fHp4d3d3eHl7fX+ChYiKjI2Oj5CQj46NjIqIhoSCgH58e3p5eXl6e3x9f4GDhYeIiYqLi4uLioqJiIeGhYOCgH9+fXx7e3t7fH1+f4CCg4WGh4iIiYmJiYiIh4aFhIOCgYB/fn19fHx8fH1+fn+AgYKDhIWGhoaHh4eGhoWFhIOCgYGAgH9+fn19fX19fn5/f4CAgYKCg4OEhISEhIODg4KCgYGAgH9/fn5+fn5+fn5/f3+AgICBgYGCgoKCgoKCgoGBgYCAgH9/f35+fn5+fn9/f39/gICAgIGBgYGBgYGBgYGAgICAgH9/f39/f39/f39/f4CAgICAgICAgYGBgYGBgYCAgICAgH9/f39/f39/f39/f3+AgICAgICAgICAgICAgICAgICAgIB/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgICAf39/f39/f3+AgA==" type="audio/wav">
+    </audio>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API = window.location.origin + '/api/v1';
+        let TOKEN = '';
+        let RESTAURANT_ID = '';
+        let currentConfig = {};
+
+        // --- AUTH ---
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            try {
+                const resp = await fetch(API + '/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.detail || 'Login failed');
+                TOKEN = data.access_token;
+                RESTAURANT_ID = data.restaurant_id;
+                document.getElementById('userEmail').textContent = email;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                loadConfig();
+                loadMenu();
+                loadAutoReplies();
+                loadOrders();
+                loadFAQs();
+            } catch (e) {
+                const err = document.getElementById('loginError');
+                err.textContent = e.message;
+                err.style.display = 'block';
+            }
+        }
+
+        function logout() {
+            TOKEN = ''; RESTAURANT_ID = '';
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('dashboard').style.display = 'none';
+        }
+
+        function authHeaders() {
+            return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN };
+        }
+
+        // --- TABS ---
+        function switchTab(name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('panel-' + name).classList.add('active');
+            if (name === 'preview') {
+                document.getElementById('previewFrame').src =
+                    `/static/chat.html?restaurant_id=${RESTAURANT_ID}`;
+            }
+            if (name === 'orders') { loadOrders(); startOrderPolling(); requestNotifPermission(); }
+            else { stopOrderPolling(); }
+            if (name === 'faqs') loadFAQs();
+            if (name === 'channels') loadChannels();
+        }
+
+        // --- TOAST ---
+        function toast(msg, type = 'success') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast show ' + type;
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        // --- TOGGLE ---
+        function toggleSwitch(el) { el.classList.toggle('on'); }
+        function isToggleOn(id) { return document.getElementById(id).classList.contains('on'); }
+        function setToggle(id, val) {
+            const el = document.getElementById(id);
+            if (val) el.classList.add('on'); else el.classList.remove('on');
+        }
+
+        // --- MODAL ---
+        function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+        // --- CONFIG ---
+        async function loadConfig() {
+            const resp = await fetch(API + `/restaurants/${RESTAURANT_ID}/config`, { headers: authHeaders() });
+            currentConfig = await resp.json();
+            const c = currentConfig;
+            // AI
+            document.getElementById('cfg-bot-name').value = c.ai.bot_name;
+            document.getElementById('cfg-personality').value = c.ai.personality;
+            document.getElementById('cfg-tone').value = c.ai.tone;
+            document.getElementById('cfg-language').value = c.ai.language;
+            document.getElementById('cfg-greeting').value = c.ai.greeting_message;
+            document.getElementById('cfg-farewell').value = c.ai.farewell_message;
+            document.getElementById('cfg-instructions').value = c.ai.custom_instructions;
+            document.getElementById('cfg-upsell').value = c.ai.upsell_instructions || '';
+            // Business
+            document.getElementById('cfg-address').value = c.business.address;
+            document.getElementById('cfg-phone').value = c.business.phone;
+            document.getElementById('cfg-email').value = c.business.email;
+            document.getElementById('cfg-cuisine').value = (c.business.cuisine_type || []).join(', ');
+            document.getElementById('cfg-description').value = c.business.description;
+            // Branding
+            document.getElementById('cfg-color').value = c.branding.primary_color;
+            document.getElementById('cfg-logo').value = c.branding.logo_url || '';
+            // Store plan for channel tab
+            currentConfig._plan = 'pro'; // TODO: load from restaurant model
+            // Ordering
+            setToggle('cfg-ordering-enabled', c.ordering.ordering_enabled);
+            setToggle('cfg-delivery-enabled', c.ordering.delivery_enabled);
+            document.getElementById('cfg-tax-rate').value = parseFloat(c.ordering.tax_rate) * 100;
+            document.getElementById('cfg-min-order').value = c.ordering.minimum_order_amount;
+            document.getElementById('cfg-order-prefix').value = c.ordering.order_number_prefix;
+            document.getElementById('cfg-prep-time').value = c.ordering.preparation_buffer_minutes;
+            // Notification config
+            if (c.notifications) {
+                const notifEmail = document.getElementById('notifEmail');
+                const notifPhone = document.getElementById('notifPhone');
+                if (notifEmail) notifEmail.value = c.notifications.notification_email || '';
+                if (notifPhone) notifPhone.value = c.notifications.notification_phone || '';
+            }
+            // Quick replies
+            renderQuickReplies(c.branding.quick_replies || []);
+        }
+
+        async function saveAIConfig() {
+            const data = {
+                bot_name: document.getElementById('cfg-bot-name').value,
+                personality: document.getElementById('cfg-personality').value,
+                tone: document.getElementById('cfg-tone').value,
+                language: document.getElementById('cfg-language').value,
+                greeting_message: document.getElementById('cfg-greeting').value,
+                farewell_message: document.getElementById('cfg-farewell').value,
+                custom_instructions: document.getElementById('cfg-instructions').value,
+                upsell_instructions: document.getElementById('cfg-upsell').value,
+            };
+            await fetch(API + `/restaurants/${RESTAURANT_ID}/config/ai`, {
+                method: 'PATCH', headers: authHeaders(), body: JSON.stringify(data)
+            });
+            toast('AI Config saved!');
+            loadConfig();
+        }
+
+        async function saveBusinessConfig() {
+            const data = {
+                address: document.getElementById('cfg-address').value,
+                phone: document.getElementById('cfg-phone').value,
+                email: document.getElementById('cfg-email').value,
+                cuisine_type: document.getElementById('cfg-cuisine').value.split(',').map(s => s.trim()).filter(Boolean),
+                description: document.getElementById('cfg-description').value,
+            };
+            await fetch(API + `/restaurants/${RESTAURANT_ID}/config/business`, {
+                method: 'PATCH', headers: authHeaders(), body: JSON.stringify(data)
+            });
+            toast('Business Info saved!');
+        }
+
+        async function saveBrandingConfig() {
+            const data = {
+                primary_color: document.getElementById('cfg-color').value,
+                logo_url: document.getElementById('cfg-logo').value || null,
+            };
+            await fetch(API + `/restaurants/${RESTAURANT_ID}/config/branding`, {
+                method: 'PATCH', headers: authHeaders(), body: JSON.stringify(data)
+            });
+            toast('Branding saved!');
+        }
+
+        async function saveOrderingConfig() {
+            const data = {
+                ordering_enabled: isToggleOn('cfg-ordering-enabled'),
+                delivery_enabled: isToggleOn('cfg-delivery-enabled'),
+                tax_rate: (parseFloat(document.getElementById('cfg-tax-rate').value) || 0) / 100,
+                minimum_order_amount: parseFloat(document.getElementById('cfg-min-order').value) || 0,
+                order_number_prefix: document.getElementById('cfg-order-prefix').value,
+                preparation_buffer_minutes: parseInt(document.getElementById('cfg-prep-time').value) || 15,
+            };
+            await fetch(API + `/restaurants/${RESTAURANT_ID}/config/ordering`, {
+                method: 'PATCH', headers: authHeaders(), body: JSON.stringify(data)
+            });
+            toast('Ordering rules saved!');
+        }
+
+        // --- QUICK REPLIES ---
+        function renderQuickReplies(qrs) {
+            const container = document.getElementById('qrList');
+            container.innerHTML = '';
+            qrs.forEach((qr, i) => {
+                container.innerHTML += `
+                    <div class="qr-item" data-index="${i}">
+                        <input class="qr-emoji" value="${qr.emoji || ''}" placeholder="Emoji">
+                        <input class="qr-label" value="${qr.label}" placeholder="Label">
+                        <input class="qr-message" value="${qr.message}" placeholder="Message to send">
+                        <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">X</button>
+                    </div>`;
+            });
+        }
+
+        function addQuickReply() {
+            const container = document.getElementById('qrList');
+            container.innerHTML += `
+                <div class="qr-item">
+                    <input class="qr-emoji" value="" placeholder="Emoji">
+                    <input class="qr-label" value="" placeholder="Label">
+                    <input class="qr-message" value="" placeholder="Message to send">
+                    <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">X</button>
+                </div>`;
+        }
+
+        async function saveQuickReplies() {
+            const items = document.querySelectorAll('.qr-item');
+            const qrs = [];
+            items.forEach(item => {
+                const emoji = item.querySelector('.qr-emoji').value;
+                const label = item.querySelector('.qr-label').value;
+                const message = item.querySelector('.qr-message').value;
+                if (label && message) qrs.push({ emoji, label, message });
+            });
+            await fetch(API + `/restaurants/${RESTAURANT_ID}/config/branding`, {
+                method: 'PATCH', headers: authHeaders(),
+                body: JSON.stringify({ quick_replies: qrs })
+            });
+            toast('Quick Replies saved!');
+        }
+
+        // --- AUTO REPLIES ---
+        async function loadAutoReplies() {
+            const resp = await fetch(API + `/restaurants/${RESTAURANT_ID}/auto-replies`, { headers: authHeaders() });
+            const ars = await resp.json();
+            const container = document.getElementById('arList');
+            if (ars.length === 0) {
+                container.innerHTML = '<p style="color:#999; text-align:center;">No auto-replies yet. Add one!</p>';
+                return;
+            }
+            container.innerHTML = ars.map(ar => `
+                <div class="ar-item">
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <div>
+                            <span class="badge badge-blue">${ar.category}</span>
+                            <span class="badge ${ar.is_active ? 'badge-green' : 'badge-red'}">${ar.is_active ? 'Active' : 'Disabled'}</span>
+                            <span class="badge badge-yellow">Priority: ${ar.priority}</span>
+                        </div>
+                        <div style="display:flex; gap:4px;">
+                            <button class="btn btn-secondary btn-sm" onclick='editAutoReply(${JSON.stringify(ar).replace(/'/g, "\\'")})'>Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteAutoReply('${ar.id}')">Delete</button>
+                        </div>
+                    </div>
+                    <div class="ar-tags" style="margin-top:8px;">
+                        ${ar.trigger_patterns.map(p => `<span class="ar-tag">${p}</span>`).join('')}
+                    </div>
+                    <p style="margin-top:8px; font-size:13px; color:#555;">${ar.response}</p>
+                </div>
+            `).join('');
+        }
+
+        function showAddAutoReply() {
+            document.getElementById('arModalTitle').textContent = 'Add Auto Reply';
+            document.getElementById('ar-patterns').value = '';
+            document.getElementById('ar-response').value = '';
+            document.getElementById('ar-category').value = 'custom';
+            document.getElementById('ar-matchtype').value = 'keyword';
+            document.getElementById('ar-priority').value = '5';
+            document.getElementById('ar-edit-id').value = '';
+            document.getElementById('arModal').classList.add('show');
+        }
+
+        function editAutoReply(ar) {
+            document.getElementById('arModalTitle').textContent = 'Edit Auto Reply';
+            document.getElementById('ar-patterns').value = ar.trigger_patterns.join(', ');
+            document.getElementById('ar-response').value = ar.response;
+            document.getElementById('ar-category').value = ar.category;
+            document.getElementById('ar-matchtype').value = ar.match_type;
+            document.getElementById('ar-priority').value = ar.priority;
+            document.getElementById('ar-edit-id').value = ar.id;
+            document.getElementById('arModal').classList.add('show');
+        }
+
+        async function saveAutoReply() {
+            const editId = document.getElementById('ar-edit-id').value;
+            const data = {
+                trigger_patterns: document.getElementById('ar-patterns').value.split(',').map(s => s.trim()).filter(Boolean),
+                response: document.getElementById('ar-response').value,
+                category: document.getElementById('ar-category').value,
+                match_type: document.getElementById('ar-matchtype').value,
+                priority: parseInt(document.getElementById('ar-priority').value) || 5,
+            };
+            if (editId) {
+                await fetch(API + `/restaurants/${RESTAURANT_ID}/auto-replies/${editId}`, {
+                    method: 'PATCH', headers: authHeaders(), body: JSON.stringify(data)
+                });
+            } else {
+                await fetch(API + `/restaurants/${RESTAURANT_ID}/auto-replies`, {
+                    method: 'POST', headers: authHeaders(), body: JSON.stringify(data)
+                });
+            }
+            closeModal('arModal');
+            loadAutoReplies();
+            toast(editId ? 'Auto Reply updated!' : 'Auto Reply created!');
+        }
+
+        async function deleteAutoReply(id) {
+            if (!confirm('Delete this auto-reply?')) return;
+            await fetch(API + `/restaurants/${RESTAURANT_ID}/auto-replies/${id}`, {
+                method: 'DELETE', headers: authHeaders()
+            });
+            loadAutoReplies();
+            toast('Auto Reply deleted');
+        }
+
+        // --- MENU ---
+        async function loadMenu() {
+            const resp = await fetch(API + `/restaurants/${RESTAURANT_ID}/menu`);
+            const menu = await resp.json();
+            document.getElementById('dashTitle').textContent = menu.restaurant_name + ' - Admin';
+            const container = document.getElementById('menuList');
+            if (!menu.categories || menu.categories.length === 0) {
+                container.innerHTML = '<p style="color:#999; text-align:center;">No menu items yet.</p>';
+                return;
+            }
+            // Build category select for modal
+            const catSelect = document.getElementById('mi-category');
+            catSelect.innerHTML = menu.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+
+            container.innerHTML = menu.categories.map(cat => `
+                <div style="margin-bottom:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <h3 style="color:#FF6B35;">${cat.name} ${cat.description ? '<span style="font-weight:normal;color:#999;font-size:13px;">— ' + cat.description + '</span>' : ''}</h3>
+                        <button class="btn btn-secondary btn-sm" onclick="showAddItem('${cat.id}')">+ Add Item</button>
+                    </div>
+                    ${cat.items.map(item => `
+                        <div class="menu-item-card">
+                            <div class="item-info">
+                                <h4>${item.name} ${item.is_vegetarian ? '<span style="color:green; font-size:11px;">VEG</span>' : ''} ${!item.is_available ? '<span class="badge badge-red">Unavailable</span>' : ''}</h4>
+                                <p>${item.description || ''}</p>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <span class="item-price">${menu.currency} ${item.price}</span>
+                                <button class="btn btn-secondary btn-sm" onclick="toggleItemAvailability('${item.id}', ${!item.is_available})">${item.is_available ? 'Disable' : 'Enable'}</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteMenuItem('${item.id}')">Del</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `).join('');
+        }
+
+        function showAddCategory() { document.getElementById('catModal').classList.add('show'); }
+        function showAddItem(catId) {
+            document.getElementById('mi-category').value = catId;
+            document.getElementById('mi-name').value = '';
+            document.getElementById('mi-desc').value = '';
+            document.getElementById('mi-price').value = '';
+            document.getElementById('mi-edit-id').value = '';
+            setToggle('mi-available', true);
+            setToggle('mi-veg', false);
+            document.getElementById('menuModal').classList.add('show');
+        }
+
+        async function saveCategory() {
+            const data = {
+                name: document.getElementById('cat-name').value,
+                description: document.getElementById('cat-desc').value,
+            };
+            await fetch(API + `/restaurants/${RESTAURANT_ID}/menu/categories`, {
+                method: 'POST', headers: authHeaders(), body: JSON.stringify(data)
+            });
+            closeModal('catModal');
+            loadMenu();
+            toast('Category added!');
+        }
+
+        async function saveMenuItem() {
+            const data = {
+                category_id: document.getElementById('mi-category').value,
+                name: document.getElementById('mi-name').value,
+                description: document.getElementById('mi-desc').value,
+                price: parseFloat(document.getElementById('mi-price').value),
+                is_available: isToggleOn('mi-available'),
+                is_vegetarian: isToggleOn('mi-veg'),
+            };
+            await fetch(API + `/restaurants/${RESTAURANT_ID}/menu/items`, {
+                method: 'POST', headers: authHeaders(), body: JSON.stringify(data)
+            });
+            closeModal('menuModal');
+            loadMenu();
+            toast('Menu item added!');
+        }
+
+        async function toggleItemAvailability(itemId, available) {
+            await fetch(API + `/restaurants/${RESTAURANT_ID}/menu/items/${itemId}`, {
+                method: 'PATCH', headers: authHeaders(),
+                body: JSON.stringify({ is_available: available })
+            });
+            loadMenu();
+            toast(available ? 'Item enabled' : 'Item disabled');
+        }
+
+        async function deleteMenuItem(itemId) {
+            if (!confirm('Delete this menu item?')) return;
+            await fetch(API + `/restaurants/${RESTAURANT_ID}/menu/items/${itemId}`, {
+                method: 'DELETE', headers: authHeaders()
+            });
+            loadMenu();
+            toast('Item deleted');
+        }
+
+        // --- ORDERS (Real-time with polling + notifications) ---
+        let lastOrderCheck = new Date().toISOString();
+        let orderPollInterval = null;
+        let knownOrderIds = new Set();
+
+        async function loadOrders() {
+            try {
+                const resp = await fetch(API + `/restaurants/${RESTAURANT_ID}/orders`, { headers: authHeaders() });
+                const orders = await resp.json();
+                const tbody = document.getElementById('ordersList');
+                if (orders.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;">No orders yet. When customers order via chat, they appear here in real-time!</td></tr>';
+                    return;
+                }
+
+                // Track known orders
+                orders.forEach(o => knownOrderIds.add(o.id));
+
+                const statusBadge = s => {
+                    const map = { pending:'badge-yellow', confirmed:'badge-blue', preparing:'badge-blue', ready:'badge-green', delivered:'badge-green', cancelled:'badge-red' };
+                    return `<span class="badge ${map[s] || 'badge-yellow'}">${s}</span>`;
+                };
+                tbody.innerHTML = orders.map(o => `
+                    <tr>
+                        <td><strong>${o.order_number}</strong></td>
+                        <td>${statusBadge(o.status)}</td>
+                        <td>${o.order_type}</td>
+                        <td>$${o.total}</td>
+                        <td>${new Date(o.placed_at).toLocaleTimeString()}</td>
+                        <td>
+                            ${o.status === 'pending' ? `<button class="btn btn-primary btn-sm" onclick="updateOrderStatus('${o.id}','confirmed')">Confirm</button>` : ''}
+                            ${o.status === 'confirmed' ? `<button class="btn btn-primary btn-sm" onclick="updateOrderStatus('${o.id}','preparing')">Preparing</button>` : ''}
+                            ${o.status === 'preparing' ? `<button class="btn btn-primary btn-sm" onclick="updateOrderStatus('${o.id}','ready')">Ready</button>` : ''}
+                            ${o.status === 'ready' ? `<button class="btn btn-primary btn-sm" onclick="updateOrderStatus('${o.id}','delivered')">Delivered</button>` : ''}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {}
+        }
+
+        async function checkNewOrders() {
+            try {
+                const resp = await fetch(API + `/restaurants/${RESTAURANT_ID}/orders/new?since=${encodeURIComponent(lastOrderCheck)}`, { headers: authHeaders() });
+                const newOrders = await resp.json();
+                lastOrderCheck = new Date().toISOString();
+
+                const genuinelyNew = newOrders.filter(o => !knownOrderIds.has(o.id));
+                if (genuinelyNew.length > 0) {
+                    genuinelyNew.forEach(o => knownOrderIds.add(o.id));
+
+                    // Show banner
+                    const banner = document.getElementById('newOrderBanner');
+                    banner.style.display = 'block';
+                    document.getElementById('newOrderInfo').textContent =
+                        `${genuinelyNew.length} new order(s): ${genuinelyNew.map(o => o.order_number).join(', ')}`;
+
+                    // Play sound
+                    if (isToggleOn('soundToggle')) {
+                        try { document.getElementById('orderSound').play(); } catch(e) {}
+                    }
+
+                    // Browser notification
+                    if (isToggleOn('browserNotifToggle') && Notification.permission === 'granted') {
+                        genuinelyNew.forEach(o => {
+                            new Notification(`New Order #${o.order_number}`, {
+                                body: `${o.order_type} — $${o.total}`,
+                            });
+                        });
+                    }
+
+                    // Refresh orders list
+                    loadOrders();
+                }
+            } catch (e) {}
+        }
+
+        function toggleAutoRefresh() {
+            if (document.getElementById('autoRefreshToggle').checked) {
+                startOrderPolling();
+                document.getElementById('pollingStatus').textContent = 'Live';
+                document.getElementById('pollingStatus').className = 'badge badge-green';
+            } else {
+                stopOrderPolling();
+                document.getElementById('pollingStatus').textContent = 'Paused';
+                document.getElementById('pollingStatus').className = 'badge badge-yellow';
+            }
+        }
+
+        function startOrderPolling() {
+            stopOrderPolling();
+            lastOrderCheck = new Date().toISOString();
+            orderPollInterval = setInterval(checkNewOrders, 5000); // Check every 5 seconds
+        }
+
+        function stopOrderPolling() {
+            if (orderPollInterval) {
+                clearInterval(orderPollInterval);
+                orderPollInterval = null;
+            }
+        }
+
+        function requestNotifPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
+
+        async function updateOrderStatus(orderId, status) {
+            await fetch(API + `/restaurants/${RESTAURANT_ID}/orders/${orderId}/status`, {
+                method: 'PATCH', headers: authHeaders(),
+                body: JSON.stringify({ status })
+            });
+            loadOrders();
+            toast(`Order ${status}!`);
+        }
+
+        async function saveNotifEmail() {
+            const email = document.getElementById('notifEmail').value;
+            await fetch(API + `/restaurants/${RESTAURANT_ID}/config/notifications`, {
+                method: 'PATCH', headers: authHeaders(),
+                body: JSON.stringify({ notification_email: email })
+            });
+            toast('Notification email saved!');
+        }
+
+        async function saveNotifPhone() {
+            const phone = document.getElementById('notifPhone').value;
+            await fetch(API + `/restaurants/${RESTAURANT_ID}/config/notifications`, {
+                method: 'PATCH', headers: authHeaders(),
+                body: JSON.stringify({ notification_phone: phone })
+            });
+            toast('Notification phone saved!');
+        }
+
+        // --- FAQ ---
+        async function loadFAQs() {
+            const resp = await fetch(API + `/restaurants/${RESTAURANT_ID}/faqs`, { headers: authHeaders() });
+            const faqs = await resp.json();
+            const container = document.getElementById('faqList');
+            if (faqs.length === 0) {
+                container.innerHTML = '<p style="color:#999; text-align:center; padding:20px;">No FAQs yet. Add your first one! Every FAQ saves you money by answering without AI.</p>';
+                return;
+            }
+            container.innerHTML = faqs.map(f => `
+                <div class="ar-item">
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <div style="flex:1;">
+                            <strong style="color:#1a1a2e;">Q: ${f.question}</strong>
+                            <p style="margin-top:4px; font-size:13px; color:#555;">A: ${f.answer}</p>
+                        </div>
+                        <div style="display:flex; gap:4px; margin-left:12px;">
+                            <span class="badge ${f.is_active ? 'badge-green' : 'badge-red'}">${f.is_active ? 'Active' : 'Off'}</span>
+                            <button class="btn btn-secondary btn-sm" onclick='editFAQ(${JSON.stringify(f).replace(/'/g, "\\'")})'>Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteFAQ('${f.id}')">Del</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showAddFAQ() {
+            document.getElementById('faqModalTitle').textContent = 'Add FAQ';
+            document.getElementById('faq-question').value = '';
+            document.getElementById('faq-answer').value = '';
+            document.getElementById('faq-edit-id').value = '';
+            document.getElementById('faqModal').classList.add('show');
+        }
+
+        function editFAQ(f) {
+            document.getElementById('faqModalTitle').textContent = 'Edit FAQ';
+            document.getElementById('faq-question').value = f.question;
+            document.getElementById('faq-answer').value = f.answer;
+            document.getElementById('faq-edit-id').value = f.id;
+            document.getElementById('faqModal').classList.add('show');
+        }
+
+        async function saveFAQ() {
+            const editId = document.getElementById('faq-edit-id').value;
+            const data = {
+                question: document.getElementById('faq-question').value,
+                answer: document.getElementById('faq-answer').value,
+            };
+            if (editId) {
+                await fetch(API + `/restaurants/${RESTAURANT_ID}/faqs/${editId}`, {
+                    method: 'PATCH', headers: authHeaders(), body: JSON.stringify(data)
+                });
+            } else {
+                await fetch(API + `/restaurants/${RESTAURANT_ID}/faqs`, {
+                    method: 'POST', headers: authHeaders(), body: JSON.stringify(data)
+                });
+            }
+            closeModal('faqModal');
+            loadFAQs();
+            toast(editId ? 'FAQ updated!' : 'FAQ added! This question will now be answered for FREE.');
+        }
+
+        async function deleteFAQ(id) {
+            if (!confirm('Delete this FAQ?')) return;
+            await fetch(API + `/restaurants/${RESTAURANT_ID}/faqs/${id}`, {
+                method: 'DELETE', headers: authHeaders()
+            });
+            loadFAQs();
+            toast('FAQ deleted');
+        }
+
+        async function bulkAddFAQs() {
+            const text = document.getElementById('bulkFaqInput').value.trim();
+            if (!text) { toast('Please paste some Q&A pairs', 'error'); return; }
+
+            const pairs = text.split('\n\n');
+            let count = 0;
+            for (const pair of pairs) {
+                const lines = pair.trim().split('\n');
+                if (lines.length >= 2) {
+                    const question = lines[0].trim();
+                    const answer = lines.slice(1).join('\n').trim();
+                    if (question && answer) {
+                        await fetch(API + `/restaurants/${RESTAURANT_ID}/faqs`, {
+                            method: 'POST', headers: authHeaders(),
+                            body: JSON.stringify({ question, answer })
+                        });
+                        count++;
+                    }
+                }
+            }
+            document.getElementById('bulkFaqInput').value = '';
+            loadFAQs();
+            toast(`Added ${count} FAQs! All will be answered for FREE.`);
+        }
+
+        // --- QR CODE GENERATOR (simple canvas-based, no library needed) ---
+        function generateQR(canvasId, text, size) {
+            // Use a free QR API to generate the image
+            const canvas = document.getElementById(canvasId);
+            if (!canvas || !text) return;
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = function() {
+                canvas.width = size || 200;
+                canvas.height = size || 200;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+            img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size||200}x${size||200}&data=${encodeURIComponent(text)}`;
+        }
+
+        function downloadQR() {
+            const canvas = document.getElementById('qrCanvas');
+            const link = document.createElement('a');
+            link.download = 'chat-qr-code.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function downloadWaQR() {
+            const canvas = document.getElementById('waQrCanvas');
+            const link = document.createElement('a');
+            link.download = 'whatsapp-qr-code.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function updateWaLink() {
+            const phone = document.getElementById('waPhoneNumber').value.replace(/[^0-9]/g, '');
+            const msg = document.getElementById('waPreMessage').value;
+            if (phone) {
+                const link = `https://wa.me/${phone}${msg ? '?text=' + encodeURIComponent(msg) : ''}`;
+                document.getElementById('waLink').value = link;
+                generateQR('waQrCanvas', link, 180);
+            } else {
+                document.getElementById('waLink').value = 'Enter your phone number above';
+            }
+        }
+
+        // --- CHANNELS ---
+        function loadChannels() {
+            const base = window.location.origin;
+            document.getElementById('chatLink').value = `${base}/static/chat.html?restaurant_id=${RESTAURANT_ID}`;
+            document.getElementById('embedCode').value = `<script src="${base}/static/widget.js" data-restaurant="${RESTAURANT_ID}"><\/script>`;
+            document.getElementById('waWebhookUrl').value = `${base}/api/v1/webhooks/whatsapp`;
+            document.getElementById('tgWebhookUrl').value = `${base}/api/v1/webhooks/telegram/${RESTAURANT_ID}`;
+
+            // Check plan and config
+            const plan = currentConfig._plan || 'free';
+            const waEnabled = currentConfig.channels && currentConfig.channels.whatsapp_enabled;
+            const tgEnabled = currentConfig.channels && currentConfig.channels.telegram_enabled;
+
+            // --- WhatsApp ---
+            if (plan !== 'free') {
+                document.getElementById('waFreeMessage').style.display = 'none';
+                document.getElementById('waConfig').style.display = 'block';
+                document.getElementById('waPlanBadge').textContent = waEnabled ? 'Connected' : 'Not Connected';
+                document.getElementById('waPlanBadge').className = 'badge ' + (waEnabled ? 'badge-green' : 'badge-yellow');
+
+                if (currentConfig.channels) {
+                    setToggle('cfg-wa-enabled', currentConfig.channels.whatsapp_enabled);
+                    document.getElementById('cfg-wa-phone-id').value = currentConfig.channels.whatsapp_phone_number_id || '';
+                    document.getElementById('cfg-wa-business-id').value = currentConfig.channels.whatsapp_business_account_id || '';
+                    document.getElementById('cfg-wa-token').value = currentConfig.channels.whatsapp_access_token || '';
+                }
+            } else {
+                document.getElementById('waFreeMessage').style.display = 'block';
+                document.getElementById('waConfig').style.display = 'none';
+                document.getElementById('waPlanBadge').textContent = 'Requires Pro Plan';
+                document.getElementById('waPlanBadge').className = 'badge badge-yellow';
+            }
+
+            // --- Telegram (free for all plans) ---
+            if (currentConfig.channels) {
+                setToggle('cfg-tg-enabled', currentConfig.channels.telegram_enabled || false);
+                document.getElementById('cfg-tg-token').value = currentConfig.channels.telegram_bot_token || '';
+            }
+            document.getElementById('tgPlanBadge').textContent = tgEnabled ? 'Connected' : 'Free — No Approval Needed';
+            document.getElementById('tgPlanBadge').className = 'badge ' + (tgEnabled ? 'badge-green' : 'badge-green');
+
+            // Generate QR code for web chat link
+            const chatUrl = document.getElementById('chatLink').value;
+            if (chatUrl) {
+                generateQR('qrCanvas', chatUrl, 200);
+            }
+        }
+
+        async function saveWhatsAppConfig() {
+            const data = {
+                whatsapp_enabled: isToggleOn('cfg-wa-enabled'),
+                whatsapp_phone_number_id: document.getElementById('cfg-wa-phone-id').value || null,
+                whatsapp_business_account_id: document.getElementById('cfg-wa-business-id').value || null,
+                whatsapp_access_token: document.getElementById('cfg-wa-token').value || null,
+            };
+            await fetch(API + `/restaurants/${RESTAURANT_ID}/config/channels`, {
+                method: 'PATCH', headers: authHeaders(), body: JSON.stringify(data)
+            });
+            toast('WhatsApp config saved!');
+            loadConfig();
+        }
+
+        async function saveTelegramConfig() {
+            const data = {
+                telegram_enabled: isToggleOn('cfg-tg-enabled'),
+                telegram_bot_token: document.getElementById('cfg-tg-token').value || null,
+            };
+            await fetch(API + `/restaurants/${RESTAURANT_ID}/config/channels`, {
+                method: 'PATCH', headers: authHeaders(), body: JSON.stringify(data)
+            });
+            toast('Telegram config saved!');
+            loadConfig();
+        }
+
+        async function setupTelegramWebhook() {
+            const token = document.getElementById('cfg-tg-token').value;
+            if (!token) {
+                toast('Enter your Bot Token first, then Save Config before setting up webhook.');
+                return;
+            }
+            try {
+                const resp = await fetch(API + `/webhooks/telegram/${RESTAURANT_ID}/setup`, {
+                    method: 'POST', headers: authHeaders()
+                });
+                const data = await resp.json();
+                if (data.ok) {
+                    const infoEl = document.getElementById('tgBotInfo');
+                    infoEl.style.display = 'block';
+                    infoEl.textContent = `Telegram connected! Your bot: @${data.bot_username}`;
+                    document.getElementById('tgPlanBadge').textContent = 'Connected';
+                    document.getElementById('tgPlanBadge').className = 'badge badge-green';
+                    toast(`Webhook registered! @${data.bot_username} is live.`);
+                } else {
+                    toast('Error: ' + (data.detail || 'Check your bot token'));
+                }
+            } catch (e) {
+                toast('Failed to setup webhook. Make sure your server has a public HTTPS URL.');
+            }
+        }
+
+        // Enter key login
+        document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+    </script>
+</body>
+</html>

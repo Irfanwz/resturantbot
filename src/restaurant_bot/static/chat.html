@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - Restaurant Bot</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .chat-header {
+            background: linear-gradient(135deg, #FF6B35, #e55a2b);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .chat-header .avatar {
+            width: 44px; height: 44px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+        }
+        .chat-header .info h1 { font-size: 18px; font-weight: 600; }
+        .chat-header .info p { font-size: 12px; opacity: 0.85; }
+        .status-dot {
+            width: 8px; height: 8px; background: #4ade80;
+            border-radius: 50%; display: inline-block; margin-right: 4px;
+        }
+
+        /* Messages area */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.5;
+            font-size: 14px;
+            animation: fadeIn 0.3s ease;
+            word-wrap: break-word;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.bot {
+            background: white;
+            color: #1a1a1a;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #FF6B35, #e55a2b);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.bot strong { color: #FF6B35; }
+
+        /* Typing indicator */
+        .typing {
+            display: none;
+            align-self: flex-start;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .typing.show { display: flex; gap: 4px; align-items: center; }
+        .typing span {
+            width: 8px; height: 8px; background: #ccc;
+            border-radius: 50%; animation: bounce 1.4s infinite;
+        }
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-8px); }
+        }
+
+        /* Quick replies */
+        .quick-replies {
+            display: flex;
+            gap: 8px;
+            padding: 8px 20px;
+            overflow-x: auto;
+            flex-wrap: wrap;
+        }
+        .quick-btn {
+            padding: 8px 16px;
+            border: 1.5px solid #FF6B35;
+            border-radius: 20px;
+            background: white;
+            color: #FF6B35;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .quick-btn:hover {
+            background: #FF6B35;
+            color: white;
+        }
+
+        /* Input area */
+        .chat-input {
+            padding: 16px 20px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 24px;
+            font-size: 14px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .chat-input input:focus { border-color: #FF6B35; }
+        .chat-input button {
+            width: 44px; height: 44px;
+            background: linear-gradient(135deg, #FF6B35, #e55a2b);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.2s;
+        }
+        .chat-input button:hover { transform: scale(1.05); }
+        .chat-input button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Cart banner */
+        .cart-banner {
+            display: none;
+            background: #FFF7ED;
+            border-top: 2px solid #FF6B35;
+            padding: 10px 20px;
+            font-size: 13px;
+            color: #9a3412;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .cart-banner.show { display: flex; }
+
+        /* Markdown-like rendering */
+        .message.bot p { margin-bottom: 8px; }
+        .message.bot p:last-child { margin-bottom: 0; }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .message { max-width: 88%; }
+            .chat-header { padding: 12px 16px; }
+            .chat-messages { padding: 12px; }
+        }
+
+        /* Loading screen */
+        .loading-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            flex-direction: column;
+            gap: 16px;
+            color: #666;
+        }
+        .loading-screen .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #FF6B35;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <!-- Loading -->
+    <div class="loading-screen" id="loading">
+        <div class="spinner"></div>
+        <p>Loading restaurant...</p>
+    </div>
+
+    <!-- Chat UI (hidden until loaded) -->
+    <div id="chatApp" style="display:none; flex-direction:column; height:100vh;">
+        <div class="chat-header">
+            <div class="avatar" id="headerEmoji">🍽️</div>
+            <div class="info" style="flex:1;">
+                <h1 id="restaurantName">Restaurant</h1>
+                <p><span class="status-dot"></span> <span id="botName">Bot</span> is online</p>
+            </div>
+            <button onclick="clearChatHistory(); sendQuick('Hi');" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">New Chat</button>
+        </div>
+
+        <div class="chat-messages" id="messages"></div>
+
+        <div class="typing" id="typing">
+            <span></span><span></span><span></span>
+        </div>
+
+        <div class="quick-replies" id="quickReplies">
+            <!-- Loaded dynamically from API -->
+        </div>
+
+        <div class="cart-banner" id="cartBanner">
+            <span id="cartInfo"></span>
+            <button class="quick-btn" onclick="sendQuick('Show my cart')">View Cart</button>
+        </div>
+
+        <div class="chat-input">
+            <input type="text" id="userInput" placeholder="Type a message..."
+                   onkeydown="if(event.key==='Enter')sendMessage()" autocomplete="off">
+            <button onclick="sendMessage()" id="sendBtn">➤</button>
+        </div>
+    </div>
+
+    <script>
+        // Config
+        const API_BASE = window.location.origin;
+        let RESTAURANT_ID = '';
+        let restaurantConfig = {};
+
+        // Persistent session — survives page refresh
+        let SESSION_ID = localStorage.getItem('rb_session_id');
+        if (!SESSION_ID) {
+            SESSION_ID = 'session-' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('rb_session_id', SESSION_ID);
+        }
+
+        // Save/load chat history from localStorage
+        function saveChatHistory() {
+            const messages = document.getElementById('messages').innerHTML;
+            localStorage.setItem('rb_chat_history_' + RESTAURANT_ID, messages);
+        }
+
+        function loadChatHistory() {
+            const saved = localStorage.getItem('rb_chat_history_' + RESTAURANT_ID);
+            if (saved) {
+                document.getElementById('messages').innerHTML = saved;
+                const container = document.getElementById('messages');
+                container.scrollTop = container.scrollHeight;
+                return true;
+            }
+            return false;
+        }
+
+        function clearChatHistory() {
+            localStorage.removeItem('rb_chat_history_' + RESTAURANT_ID);
+            localStorage.removeItem('rb_session_id');
+            SESSION_ID = 'session-' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('rb_session_id', SESSION_ID);
+            document.getElementById('messages').innerHTML = '';
+        }
+
+        // Get restaurant ID from URL: /chat/{slug} or ?restaurant_id=xxx
+        async function init() {
+            const params = new URLSearchParams(window.location.search);
+            RESTAURANT_ID = params.get('restaurant_id') || params.get('id') || '';
+
+            if (!RESTAURANT_ID) {
+                // Try to get from slug in path
+                const pathParts = window.location.pathname.split('/');
+                const slugIdx = pathParts.indexOf('chat');
+                if (slugIdx >= 0 && pathParts[slugIdx + 1]) {
+                    // For now, use the slug as a hint — would need a slug->id lookup API
+                    RESTAURANT_ID = pathParts[slugIdx + 1];
+                }
+            }
+
+            if (!RESTAURANT_ID) {
+                // Fallback: try to fetch demo restaurant
+                try {
+                    const resp = await fetch(API_BASE + '/api/v1/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: 'admin@goldenfork.com', password: 'admin123' })
+                    });
+                    const data = await resp.json();
+                    RESTAURANT_ID = data.restaurant_id;
+                } catch (e) {
+                    document.getElementById('loading').innerHTML = '<p>No restaurant found. Add ?restaurant_id=xxx to the URL.</p>';
+                    return;
+                }
+            }
+
+            // Load widget config (name, colors, quick replies)
+            try {
+                const resp = await fetch(API_BASE + `/api/v1/restaurants/${RESTAURANT_ID}/widget-config`);
+                const wc = await resp.json();
+                document.getElementById('restaurantName').textContent = wc.restaurant_name || 'Restaurant';
+                document.getElementById('botName').textContent = wc.bot_name || 'Bot';
+
+                // Apply brand color
+                if (wc.primary_color) {
+                    document.documentElement.style.setProperty('--brand', wc.primary_color);
+                    document.querySelectorAll('.chat-header, .message.user, .chat-input button').forEach(el => {
+                        el.style.background = `linear-gradient(135deg, ${wc.primary_color}, ${wc.primary_color}dd)`;
+                    });
+                    document.querySelectorAll('.quick-btn').forEach(el => {
+                        el.style.borderColor = wc.primary_color;
+                        el.style.color = wc.primary_color;
+                    });
+                }
+
+                // Build quick reply buttons from config
+                const qrContainer = document.getElementById('quickReplies');
+                qrContainer.innerHTML = '';
+                if (wc.quick_replies && wc.quick_replies.length > 0) {
+                    wc.quick_replies.forEach(qr => {
+                        const btn = document.createElement('button');
+                        btn.className = 'quick-btn';
+                        btn.textContent = (qr.emoji ? qr.emoji + ' ' : '') + qr.label;
+                        btn.onclick = () => sendQuick(qr.message);
+                        if (wc.primary_color) {
+                            btn.style.borderColor = wc.primary_color;
+                            btn.style.color = wc.primary_color;
+                            btn.onmouseenter = () => { btn.style.background = wc.primary_color; btn.style.color = 'white'; };
+                            btn.onmouseleave = () => { btn.style.background = 'white'; btn.style.color = wc.primary_color; };
+                        }
+                        qrContainer.appendChild(btn);
+                    });
+                }
+            } catch (e) {
+                document.getElementById('restaurantName').textContent = 'Restaurant';
+            }
+
+            // Show chat
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('chatApp').style.display = 'flex';
+
+            // Load saved chat history or send greeting
+            if (!loadChatHistory()) {
+                sendQuick('Hi');
+            }
+        }
+
+        // Send message
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            input.value = '';
+            addMessage(text, 'user');
+            showTyping(true);
+            document.getElementById('sendBtn').disabled = true;
+
+            try {
+                const resp = await fetch(API_BASE + `/api/v1/restaurants/${RESTAURANT_ID}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text, session_id: SESSION_ID })
+                });
+                const data = await resp.json();
+
+                showTyping(false);
+                addMessage(data.reply, 'bot');
+
+                // Update cart banner
+                if (data.cart_summary && data.cart_summary.item_count > 0) {
+                    document.getElementById('cartBanner').classList.add('show');
+                    document.getElementById('cartInfo').textContent =
+                        `🛒 ${data.cart_summary.item_count} item(s) — $${data.cart_summary.subtotal}`;
+                } else {
+                    document.getElementById('cartBanner').classList.remove('show');
+                }
+            } catch (e) {
+                showTyping(false);
+                addMessage('Sorry, something went wrong. Please try again.', 'bot');
+            }
+
+            document.getElementById('sendBtn').disabled = false;
+            input.focus();
+        }
+
+        function sendQuick(text) {
+            document.getElementById('userInput').value = text;
+            sendMessage();
+        }
+
+        function addMessage(text, type) {
+            const container = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+
+            if (type === 'bot') {
+                // Simple markdown: **bold**, \n for line breaks
+                let html = text
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n\n/g, '</p><p>')
+                    .replace(/\n/g, '<br>');
+                div.innerHTML = '<p>' + html + '</p>';
+            } else {
+                div.textContent = text;
+            }
+
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            saveChatHistory();
+        }
+
+        function showTyping(show) {
+            const el = document.getElementById('typing');
+            el.classList.toggle('show', show);
+            if (show) {
+                const container = document.getElementById('messages');
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        // Init
+        init();
+    </script>
+</body>
+</html>
