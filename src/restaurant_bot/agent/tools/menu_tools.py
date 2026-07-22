@@ -24,13 +24,11 @@ async def get_menu(ctx: RunContext[RestaurantBotDeps]) -> str:
         return "The menu is currently empty or not yet set up."
 
     lines = []
+    item_number = 1
     for cat in categories:
-        lines.append(f"\n### {cat.name}")
-        if cat.description:
-            lines.append(f"_{cat.description}_")
+        lines.append(f"\n**{cat.name}**")
         available_items = [item for item in cat.items if item.is_available]
         if not available_items:
-            lines.append("No items currently available in this category.")
             continue
         for item in sorted(available_items, key=lambda x: x.sort_order):
             tags = []
@@ -39,18 +37,12 @@ async def get_menu(ctx: RunContext[RestaurantBotDeps]) -> str:
             if item.is_vegan:
                 tags.append("VG")
             tag_str = f" [{', '.join(tags)}]" if tags else ""
-            lines.append(f"- **{item.name}** — {item.price}{tag_str}")
+            lines.append(f"{item_number}. {item.name} — ${item.price}{tag_str}")
             if item.description:
-                lines.append(f"  {item.description}")
-            if item.modifiers:
-                for mod in item.modifiers:
-                    options_str = ", ".join(
-                        f"{opt['name']} (+{opt['price_delta']})" if opt.get('price_delta') else opt['name']
-                        for opt in (mod.options if isinstance(mod.options, list) else [])
-                    )
-                    if options_str:
-                        lines.append(f"  {mod.name}: {options_str}")
+                lines.append(f"   {item.description}")
+            item_number += 1
 
+    lines.append(f"\nJust say the item name or number to add to your cart!")
     return "\n".join(lines)
 
 

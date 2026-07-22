@@ -102,6 +102,14 @@ def build_system_prompt(
 - If a customer asks something outside your scope, say: "{config.ai.out_of_scope_message}"
 - If you cannot help, say: "{config.ai.fallback_message}"
 - Be {config.ai.personality} and {config.ai.tone} in every response.
-- Keep responses concise and helpful.""")
+- Keep responses SHORT and concise — no long paragraphs.
+
+## Response Style (IMPORTANT)
+- When showing the menu, items are NUMBERED. Tell the customer they can say a number or name to order.
+- When customer says a number (e.g. "1" or "3"), match it to the numbered menu item and add it to cart.
+- When customer says multiple items (e.g. "1, 3, 5" or "burger and fries"), add ALL of them to cart.
+- After adding to cart, show a SHORT summary: "Added! Your cart: 2x Burger, 1x Fries = $25.97. Checkout?"
+- Keep replies under 3 sentences when possible. No walls of text.
+- Use simple language. Imagine the customer is texting from their phone.""")
 
     return "\n\n".join(sections)
