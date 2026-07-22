@@ -1,3 +1,4 @@
+import logging
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -5,6 +6,8 @@ from decimal import Decimal
 
 import httpx
 from restaurant_bot.schemas.config import RestaurantConfig
+
+logger = logging.getLogger(__name__)
 
 
 async def send_order_email(
@@ -98,7 +101,10 @@ async def send_telegram_order_notification(
     items_summary: str,
 ) -> bool:
     """Send new order notification to restaurant owner's Telegram."""
+    logger.info(f"[TG NOTIFY] Attempting to send order notification. bot_token={'SET' if bot_token else 'EMPTY'}, chat_id={chat_id}, order={order_number}")
+
     if not bot_token or not chat_id:
+        logger.warning(f"[TG NOTIFY] SKIPPED — bot_token={'SET' if bot_token else 'EMPTY'}, chat_id={chat_id or 'EMPTY'}")
         return False
 
     text = (
@@ -118,7 +124,8 @@ async def send_telegram_order_notification(
                 "text": text,
                 "parse_mode": "HTML",
             })
+            logger.info(f"[TG NOTIFY] Response: status={resp.status_code}, body={resp.text[:200]}")
             return resp.status_code == 200
     except Exception as e:
-        print(f"Telegram notification failed: {e}")
+        logger.error(f"[TG NOTIFY] FAILED: {e}")
         return False

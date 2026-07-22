@@ -12,7 +12,10 @@ from restaurant_bot.services.order_service import (
     get_order_by_number,
     get_customer_orders,
 )
+import logging
 from restaurant_bot.services.notification_service import send_telegram_order_notification
+
+logger = logging.getLogger(__name__)
 
 
 async def add_to_cart(ctx: RunContext[RestaurantBotDeps], item_name: str, quantity: int = 1, modifiers: list[dict] | None = None, special_instructions: str | None = None) -> str:
@@ -132,7 +135,7 @@ async def place_order(ctx: RunContext[RestaurantBotDeps], order_type: str = "din
     cart_items_snapshot = list(session.cart.items)
     session.cart.clear()
 
-    # Trigger notifications (non-blocking)
+    # Trigger notifications
     try:
         items_text = "\n".join(f"  • {ci.quantity}x {ci.name}" for ci in cart_items_snapshot)
         session.add_message("system", f"__ORDER_PLACED__|{order.order_number}|{order.total}|{order_type}|{items_text}")
@@ -140,8 +143,10 @@ async def place_order(ctx: RunContext[RestaurantBotDeps], order_type: str = "din
         # Send Telegram notification to restaurant owner
         tg_token = config.channels.telegram_bot_token
         tg_chat_id = config.notifications.telegram_admin_chat_id
+        logger.info(f"[ORDER] Telegram notify check: token={'SET' if tg_token else 'EMPTY'}, chat_id={tg_chat_id or 'EMPTY'}")
+
         if tg_token and tg_chat_id:
-            await send_telegram_order_notification(
+            result = await send_telegram_order_notification(
                 bot_token=tg_token,
                 chat_id=tg_chat_id,
                 restaurant_name=ctx.deps.restaurant_name,
@@ -150,8 +155,11 @@ async def place_order(ctx: RunContext[RestaurantBotDeps], order_type: str = "din
                 order_type=order_type,
                 items_summary=items_text,
             )
-    except Exception:
-        pass
+            logger.info(f"[ORDER] Telegram notification sent: {result}")
+        else:
+            logger.warning(f"[ORDER] Telegram notification SKIPPED — missing token or chat_id")
+    except Exception as e:
+        logger.error(f"[ORDER] Telegram notification ERROR: {e}")
 
     status_msg = "Your order has been confirmed!" if config.ordering.auto_confirm_orders else "Your order has been placed and is awaiting confirmation."
     est_time = f"\nEstimated ready: ~{config.ordering.preparation_buffer_minutes} minutes" if order.estimated_ready_at else ""

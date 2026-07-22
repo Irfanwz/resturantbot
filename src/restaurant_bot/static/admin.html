@@ -654,8 +654,10 @@ Yes! We offer catering for groups of 20+. Contact us at hello@goldenfork.com"></
                         <div style="display:flex; gap:8px;">
                             <input type="text" id="notifTgChatId" placeholder="e.g. 6093827009">
                             <button class="btn btn-primary btn-sm" onclick="saveNotifTgChatId()">Save</button>
+                            <button class="btn btn-secondary btn-sm" onclick="testTelegramNotif()">Test</button>
                         </div>
-                        <p class="hint">Get your Chat ID from <strong>@userinfobot</strong> on Telegram. You'll get a message for every new order!</p>
+                        <p class="hint">Get your Chat ID from <strong>@userinfobot</strong> on Telegram. Save first, then click Test!</p>
+                        <div id="tgTestResult" style="display:none; margin-top:8px; padding:8px; border-radius:6px; font-size:13px;"></div>
                     </div>
                 </div>
             </div>
@@ -1348,6 +1350,33 @@ Yes! We offer catering for groups of 20+. Contact us at hello@goldenfork.com"></
             });
             toast('Telegram Chat ID saved! You will now receive order notifications on Telegram.');
             loadConfig();
+        }
+
+        async function testTelegramNotif() {
+            const resultEl = document.getElementById('tgTestResult');
+            resultEl.style.display = 'block';
+            resultEl.style.background = '#fef3c7';
+            resultEl.style.color = '#92400e';
+            resultEl.textContent = 'Sending test notification...';
+            try {
+                const resp = await fetch(API + `/webhooks/telegram/${RESTAURANT_ID}/test`, {
+                    method: 'POST', headers: authHeaders()
+                });
+                const data = await resp.json();
+                if (data.ok) {
+                    resultEl.style.background = '#f0fdf4';
+                    resultEl.style.color = '#166534';
+                    resultEl.textContent = 'Test sent! Check your Telegram now.';
+                } else {
+                    resultEl.style.background = '#fef2f2';
+                    resultEl.style.color = '#991b1b';
+                    resultEl.textContent = 'Failed: ' + (data.error || data.message || 'Unknown error');
+                }
+            } catch (e) {
+                resultEl.style.background = '#fef2f2';
+                resultEl.style.color = '#991b1b';
+                resultEl.textContent = 'Error: Could not reach server';
+            }
         }
 
         // --- FAQ ---

@@ -1,7 +1,10 @@
+import logging
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
 
 from restaurant_bot.db.engine import get_db
 from restaurant_bot.db.models.restaurant import Restaurant
@@ -300,4 +303,49 @@ async def setup_telegram_webhook(
         "webhook_url": webhook_url,
         "bot_username": bot_username,
         "message": f"Webhook registered! Your bot @{bot_username} is now connected.",
+    }
+
+
+@router.post("/telegram/{restaurant_id}/test")
+async def test_telegram_notification(
+    restaurant_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_owner),
+):
+    """Send a test notification to the restaurant owner's Telegram."""
+    from restaurant_bot.services.notification_service import send_telegram_order_notification
+
+    result = await db.execute(
+        select(Restaurant).where(Restaurant.id == restaurant_id, Restaurant.is_active == True)
+    )
+    restaurant = result.scalar_one_or_none()
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+
+    config = RestaurantConfig.model_validate(restaurant.config or {})
+    bot_token = config.channels.telegram_bot_token
+    chat_id = config.notifications.telegram_admin_chat_id
+
+    logger.info(f"[TEST] bot_token={'SET' if bot_token else 'EMPTY'}, chat_id={chat_id}")
+
+    if not bot_token:
+        return {"ok": False, "error": "No Telegram bot token configured. Go to Channels tab and save your bot token."}
+    if not chat_id:
+        return {"ok": False, "error": "No Telegram Chat ID configured. Go to Orders tab → Notification Settings and save your Chat ID."}
+
+    success = await send_telegram_order_notification(
+        bot_token=bot_token,
+        chat_id=chat_id,
+        restaurant_name=restaurant.name,
+        order_number="TEST-001",
+        order_total="$25.99",
+        order_type="dine_in",
+        items_summary="  • 1x Test Burger\n  • 1x Test Fries",
+    )
+
+    return {
+        "ok": success,
+        "bot_token_set": bool(bot_token),
+        "chat_id": chat_id,
+        "message": "Test notification sent! Check your Telegram." if success else "Failed to send. Check Deploy Logs for details.",
     }
